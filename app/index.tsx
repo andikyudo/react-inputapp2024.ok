@@ -85,12 +85,14 @@ export default function LoginScreen() {
 
 	return (
 		<View style={styles.container}>
+			<Text style={styles.title}>Login Aplikasi Voting</Text>
 			<TextInput
 				style={styles.input}
 				placeholder='NRP'
 				value={nrp}
 				onChangeText={setNrp}
 				keyboardType='numeric'
+				maxLength={5}
 			/>
 			<TextInput
 				style={styles.input}
@@ -99,15 +101,7 @@ export default function LoginScreen() {
 				onChangeText={setPassword}
 				secureTextEntry
 			/>
-			<TouchableOpacity
-				style={styles.button}
-				onPress={handleLogin}
-				disabled={loading}
-			>
-				<Text style={styles.buttonText}>
-					{loading ? "Logging in..." : "Login"}
-				</Text>
-			</TouchableOpacity>
+			{loading && <ActivityIndicator size='large' color='#0000ff' />}
 		</View>
 	);
 }
@@ -117,20 +111,21 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: "center",
 		padding: 20,
+		backgroundColor: "#f5f5f5",
+	},
+	title: {
+		fontSize: 24,
+		fontWeight: "bold",
+		marginBottom: 20,
+		textAlign: "center",
 	},
 	input: {
-		height: 40,
-		borderColor: "gray",
+		height: 50,
+		borderColor: "#ddd",
 		borderWidth: 1,
-		marginBottom: 10,
-		paddingHorizontal: 10,
-	},
-	button: {
-		backgroundColor: "#0000ff",
-		padding: 10,
-		alignItems: "center",
-	},
-	buttonText: {
-		color: "white",
+		marginBottom: 15,
+		paddingHorizontal: 15,
+		borderRadius: 10,
+		backgroundColor: "white",
 	},
 });
