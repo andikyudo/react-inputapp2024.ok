@@ -15,42 +15,74 @@ import { Link, router } from "expo-router";
 import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
-	const [username, setUsername] = useState("");
+	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	async function handleLogin() {
 		setLoading(true);
 		try {
-			console.log("Attempting login with:", username, password); // Log input pengguna
+			const { data, error } = await supabase.auth.signInWithPassword({
+				email: email,
+				password: password,
+			});
 
-			const { data, error } = await supabase
-				.from("profiles")
-				.select()
-				.eq("username", username)
-				.eq("password", password);
+			if (error) throw error;
 
-			if (error) {
-				console.error("Supabase error:", error);
-				throw error;
-			}
-
-			console.log("Query result:", data); // Log hasil query
-
-			if (data && data.length > 0) {
+			if (data.user) {
 				// Login berhasil
-				console.log("Login successful:", data[0]);
+				console.log("Login successful", data.user);
+
+				// Catat sesi pengguna
+				const { error: sessionError } = await supabase
+					.from("user_session")
+					.insert({
+						user_id: data.user.id,
+						username: data.user.email,
+					});
+
+				if (sessionError) {
+					console.error("Error inserting session:", sessionError);
+				}
+
+				setEmail(data.user);
 				router.replace("/home");
-			} else {
-				// Tidak ada pengguna yang cocok
-				console.log("No matching user found");
-				Alert.alert("Error", "Invalid username or password");
 			}
 		} catch (error) {
 			console.error("Error during login:", error);
 			Alert.alert("Error", error.message || "An unexpected error occurred");
 		} finally {
 			setLoading(false);
+		}
+	}
+	async function handleLogout() {
+		try {
+			const { error } = await supabase.auth.signOut();
+			if (error) throw error;
+
+			// Update user session
+			if (user && user.id) {
+				const { error: sessionError } = await supabase
+					.from("user_session")
+					.update({
+						logout_time: new Date().toISOString(),
+						is_active: false,
+					})
+					.eq("user_id", user.id)
+					.eq("is_active", true);
+
+				if (sessionError)
+					console.error("Error updating session:", sessionError);
+			}
+
+			setUser(null);
+			router.replace("/");
+		} catch (error) {
+			console.error("Error during logout:", error);
+			Alert.alert(
+				"Error",
+				error.message || "An unexpected error occurred during logout"
+			);
 		}
 	}
 
@@ -65,10 +97,11 @@ export default function LoginScreen() {
 					<View style={styles.inputContainer}>
 						<TextInput
 							style={styles.input}
-							placeholder='Username'
-							value={username}
-							onChangeText={setUsername}
+							placeholder='Email'
+							value={email}
+							onChangeText={setEmail}
 							autoCapitalize='none'
+							keyboardType='email-address'
 						/>
 						<TextInput
 							style={styles.input}
