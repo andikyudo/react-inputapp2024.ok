@@ -1,11 +1,42 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
+import { supabase } from "../lib/supabase";
 
 export default function HomeScreen() {
-	const handleLogout = () => {
-		// Implementasi logout di sini
-		router.replace("/");
+	const handleLogout = async () => {
+		try {
+			// Ambil sesi aktif terakhir
+			const { data: sessionData, error: sessionError } = await supabase
+				.from("user_session")
+				.select("id")
+				.eq("is_active", true)
+				.order("login_time", { ascending: false })
+				.limit(1)
+				.single();
+
+			if (sessionError) throw sessionError;
+
+			if (sessionData) {
+				// Update sesi dengan waktu logout
+				const { error: updateError } = await supabase
+					.from("user_session")
+					.update({
+						logout_time: new Date().toLocaleString("en-US", {
+							timeZone: "Asia/Jakarta",
+						}),
+						is_active: false,
+					})
+					.eq("id", sessionData.id);
+
+				if (updateError) throw updateError;
+			}
+
+			router.replace("/");
+		} catch (error) {
+			console.error("Error during logout:", error);
+			Alert.alert("Error", "Terjadi kesalahan saat logout");
+		}
 	};
 
 	return (

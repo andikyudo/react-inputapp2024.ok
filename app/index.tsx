@@ -51,7 +51,9 @@ export default function LoginScreen() {
 				.insert({
 					user_id: userData.id,
 					username: userData.nrp.toString(),
-					login_time: new Date().toISOString(),
+					login_time: new Date().toLocaleString("en-US", {
+						timeZone: "Asia/Jakarta",
+					}),
 					is_active: true,
 				})
 				.select()
