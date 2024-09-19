@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
 	View,
 	Text,
@@ -6,6 +6,7 @@ import {
 	TouchableOpacity,
 	StyleSheet,
 	Alert,
+	ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
@@ -15,43 +16,36 @@ export default function LoginScreen() {
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 
-	async function handleLogin() {
-		setLoading(true);
+	useEffect(() => {
+		if (nrp.length === 8) {
+			checkCredentials();
+		}
+	}, [nrp, password]);
+
+	async function checkCredentials() {
+		if (nrp.length !== 8 || password.length === 0) return;
+
 		try {
-			console.log("Attempting login with NRP:", nrp);
-
-			// Pastikan NRP adalah angka
-			const nrpNumber = parseInt(nrp, 10);
-			if (isNaN(nrpNumber)) {
-				throw new Error("NRP harus berupa angka");
-			}
-
-			// Cari user berdasarkan NRP
 			const { data: userData, error: userError } = await supabase
 				.from("custom_users")
 				.select("id, nrp, password")
-				.eq("nrp", nrpNumber)
+				.eq("nrp", nrp)
 				.single();
 
-			if (userError) {
-				console.error("Error fetching user:", userError);
-				throw new Error("Gagal mengambil data pengguna");
+			if (userError) throw userError;
+			if (!userData) return; // NRP tidak ditemukan, tapi jangan tampilkan error
+
+			if (userData.password === password) {
+				handleLogin(userData);
 			}
+		} catch (error) {
+			console.error("Error checking credentials:", error);
+		}
+	}
 
-			if (!userData) {
-				console.log("No user found with NRP:", nrp);
-				throw new Error("NRP tidak ditemukan");
-			}
-
-			console.log("User found:", userData);
-
-			// Periksa password
-			if (userData.password !== password) {
-				console.log("Password mismatch");
-				throw new Error("Password salah");
-			}
-
-			// Buat sesi pengguna
+	async function handleLogin(userData) {
+		setLoading(true);
+		try {
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
 				.insert({
@@ -63,16 +57,9 @@ export default function LoginScreen() {
 				.select()
 				.single();
 
-			if (sessionError) {
-				console.error("Error creating session:", sessionError);
-				throw new Error("Gagal membuat sesi");
-			}
+			if (sessionError) throw sessionError;
 
 			console.log("Login successful, session created:", sessionData);
-
-			// Set user state (Anda perlu mengimplementasikan state management)
-			// setUser({ id: userData.id, nrp: userData.nrp });
-
 			Alert.alert("Sukses", "Login berhasil");
 			router.replace("/home");
 		} catch (error) {
@@ -92,15 +79,25 @@ export default function LoginScreen() {
 				value={nrp}
 				onChangeText={setNrp}
 				keyboardType='numeric'
-				maxLength={5}
+				maxLength={8}
 			/>
 			<TextInput
 				style={styles.input}
 				placeholder='Password'
 				value={password}
 				onChangeText={setPassword}
+				keyboardType='numeric'
 				secureTextEntry
 			/>
+			<TouchableOpacity
+				style={styles.button}
+				onPress={() => checkCredentials()}
+				disabled={loading || nrp.length !== 8 || password.length === 0}
+			>
+				<Text style={styles.buttonText}>
+					{loading ? "Sedang Login..." : "Login"}
+				</Text>
+			</TouchableOpacity>
 			{loading && <ActivityIndicator size='large' color='#0000ff' />}
 		</View>
 	);
@@ -127,5 +124,16 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 15,
 		borderRadius: 10,
 		backgroundColor: "white",
+	},
+	button: {
+		backgroundColor: "#007AFF",
+		padding: 15,
+		borderRadius: 10,
+		alignItems: "center",
+	},
+	buttonText: {
+		color: "white",
+		fontSize: 18,
+		fontWeight: "bold",
 	},
 });
