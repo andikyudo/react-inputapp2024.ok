@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
+import * as Location from "expo-location";
 
 export default function LoginScreen() {
 	const [nrp, setNrp] = useState("");
@@ -33,7 +34,7 @@ export default function LoginScreen() {
 				.single();
 
 			if (userError) throw userError;
-			if (!userData) return; // NRP tidak ditemukan, tapi jangan tampilkan error
+			if (!userData) return;
 
 			if (userData.password === password) {
 				handleLogin(userData);
@@ -46,6 +47,16 @@ export default function LoginScreen() {
 	async function handleLogin(userData) {
 		setLoading(true);
 		try {
+			// Minta izin lokasi
+			let { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				throw new Error("Izin untuk mengakses lokasi ditolak");
+			}
+
+			// Dapatkan lokasi
+			let location = await Location.getCurrentPositionAsync({});
+
+			// Simpan sesi login
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
 				.insert({
@@ -61,11 +72,29 @@ export default function LoginScreen() {
 
 			if (sessionError) throw sessionError;
 
-			console.log("Login successful, session created:", sessionData);
+			// Simpan lokasi
+			const { data: locationData, error: locationError } = await supabase
+				.from("user_locations")
+				.insert({
+					user_id: userData.id,
+					latitude: location.coords.latitude,
+					longitude: location.coords.longitude,
+					timestamp: new Date().toISOString(),
+				})
+				.select();
+
+			if (locationError) {
+				console.error("Error menyimpan lokasi:", locationError);
+				// Lanjutkan proses login meskipun gagal menyimpan lokasi
+			} else {
+				console.log("Lokasi berhasil disimpan:", locationData);
+			}
+
+			console.log("Login berhasil, sesi dan lokasi disimpan");
 			Alert.alert("Sukses", "Login berhasil");
 			router.replace("/home");
 		} catch (error) {
-			console.error("Error during login:", error);
+			console.error("Error selama login:", error);
 			Alert.alert("Error", error.message || "Terjadi kesalahan saat login");
 		} finally {
 			setLoading(false);
