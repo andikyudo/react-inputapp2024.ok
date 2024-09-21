@@ -9,27 +9,46 @@ export default function HomeScreen() {
 			// Ambil sesi aktif terakhir
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
-				.select("id")
+				.select("id, user_id")
 				.eq("is_active", true)
 				.order("login_time", { ascending: false })
 				.limit(1)
 				.single();
 
-			if (sessionError) throw sessionError;
+			if (sessionError) {
+				if (sessionError.code === "PGRST116") {
+					console.log("No active session found");
+					// Tidak ada sesi aktif, langsung arahkan ke halaman login
+					router.replace("/");
+					return;
+				}
+				throw sessionError;
+			}
 
-			if (sessionData) {
+			if (sessionData && sessionData.id && sessionData.user_id) {
 				// Update sesi dengan waktu logout
 				const { error: updateError } = await supabase
 					.from("user_session")
 					.update({
-						logout_time: new Date().toLocaleString("en-US", {
-							timeZone: "Asia/Jakarta",
-						}),
+						logout_time: new Date().toISOString(),
 						is_active: false,
 					})
 					.eq("id", sessionData.id);
 
 				if (updateError) throw updateError;
+
+				// Hapus lokasi user
+				const { error: deleteLocationError } = await supabase
+					.from("user_locations")
+					.delete()
+					.eq("user_id", sessionData.user_id);
+
+				if (deleteLocationError) throw deleteLocationError;
+
+				console.log("Logout successful, session updated and location deleted");
+			} else {
+				console.log("Invalid session data:", sessionData);
+				// Handle kasus di mana data sesi tidak valid
 			}
 
 			router.replace("/");
