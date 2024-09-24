@@ -11,6 +11,8 @@ import {
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import * as Location from "expo-location";
+import { upsertUserSession } from "../utils/sessionUtils";
+import { getCurrentJakartaTime } from "../utils/dateUtils";
 
 export default function LoginScreen() {
 	const [nrp, setNrp] = useState("");
@@ -19,7 +21,7 @@ export default function LoginScreen() {
 
 	useEffect(() => {
 		if (nrp.length === 8) {
-			checkCredentials();
+			void checkCredentials();
 		}
 	}, [nrp, password]);
 
@@ -37,57 +39,43 @@ export default function LoginScreen() {
 			if (!userData) return;
 
 			if (userData.password === password) {
-				handleLogin(userData);
+				void handleLogin(userData);
 			}
 		} catch (error) {
 			console.error("Error checking credentials:", error);
 		}
 	}
 
-	async function handleLogin(userData) {
+	async function handleLogin(userData: { id: string; nrp: string }) {
 		setLoading(true);
 		try {
-			// Minta izin lokasi
-			let { status } = await Location.requestForegroundPermissionsAsync();
+			const { status } = await Location.requestForegroundPermissionsAsync();
 			if (status !== "granted") {
 				throw new Error("Izin untuk mengakses lokasi ditolak");
 			}
 
-			// Dapatkan lokasi
-			let location = await Location.getCurrentPositionAsync({});
+			const location = await Location.getCurrentPositionAsync({});
 
-			// Simpan sesi login
-			const { data: sessionData, error: sessionError } = await supabase
-				.from("user_session")
-				.insert({
-					user_id: userData.id,
-					username: userData.nrp.toString(),
-					login_time: new Date().toLocaleString("en-US", {
-						timeZone: "Asia/Jakarta",
-					}),
-					is_active: true,
-				})
-				.select()
-				.single();
+			await upsertUserSession(userData.id, userData.nrp.toString(), true);
 
-			if (sessionError) throw sessionError;
-
-			// Simpan lokasi
-			const { data: locationData, error: locationError } = await supabase
+			const { error: locationError } = await supabase
 				.from("user_locations")
-				.insert({
-					user_id: userData.id,
-					latitude: location.coords.latitude,
-					longitude: location.coords.longitude,
-					timestamp: new Date().toISOString(),
-				})
-				.select();
+				.upsert(
+					{
+						user_id: userData.id,
+						latitude: location.coords.latitude,
+						longitude: location.coords.longitude,
+						timestamp: getCurrentJakartaTime(),
+					},
+					{
+						onConflict: "user_id",
+					}
+				);
 
 			if (locationError) {
 				console.error("Error menyimpan lokasi:", locationError);
-				// Lanjutkan proses login meskipun gagal menyimpan lokasi
 			} else {
-				console.log("Lokasi berhasil disimpan:", locationData);
+				console.log("Lokasi berhasil disimpan");
 			}
 
 			console.log("Login berhasil, sesi dan lokasi disimpan");
@@ -95,7 +83,10 @@ export default function LoginScreen() {
 			router.replace("/home");
 		} catch (error) {
 			console.error("Error selama login:", error);
-			Alert.alert("Error", error.message || "Terjadi kesalahan saat login");
+			Alert.alert(
+				"Error",
+				error instanceof Error ? error.message : "Terjadi kesalahan saat login"
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -122,7 +113,7 @@ export default function LoginScreen() {
 			/>
 			<TouchableOpacity
 				style={styles.button}
-				onPress={() => checkCredentials()}
+				onPress={() => void checkCredentials()}
 				disabled={loading || nrp.length !== 8 || password.length === 0}
 			>
 				<Text style={styles.buttonText}>

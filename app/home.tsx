@@ -1,56 +1,59 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
+import LocationTracker from "../components/LocationTracker";
+import { upsertUserSession } from "../utils/sessionUtils";
 
 export default function HomeScreen() {
-	const handleLogout = async () => {
+	const [userId, setUserId] = useState<string | null>(null);
+
+	useEffect(() => {
+		void fetchUserId();
+	}, []);
+
+	const fetchUserId = async () => {
 		try {
-			// Ambil sesi aktif terakhir
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
-				.select("id, user_id")
+				.select("user_id")
 				.eq("is_active", true)
 				.order("login_time", { ascending: false })
 				.limit(1)
 				.single();
 
-			if (sessionError) {
-				if (sessionError.code === "PGRST116") {
-					console.log("No active session found");
-					// Tidak ada sesi aktif, langsung arahkan ke halaman login
-					router.replace("/");
-					return;
-				}
-				throw sessionError;
+			if (sessionError) throw sessionError;
+			if (sessionData && sessionData.user_id) {
+				setUserId(sessionData.user_id);
 			}
+		} catch (error) {
+			console.error("Error fetching user ID:", error);
+			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
+		}
+	};
 
-			if (sessionData && sessionData.id && sessionData.user_id) {
-				// Update sesi dengan waktu logout
-				const { error: updateError } = await supabase
-					.from("user_session")
-					.update({
-						logout_time: new Date().toISOString(),
-						is_active: false,
-					})
-					.eq("id", sessionData.id);
+	const handleLogout = async () => {
+		try {
+			if (!userId) throw new Error("User ID not found");
 
-				if (updateError) throw updateError;
+			const { data: userData, error: userError } = await supabase
+				.from("custom_users")
+				.select("nrp")
+				.eq("id", userId)
+				.single();
 
-				// Hapus lokasi user
-				const { error: deleteLocationError } = await supabase
-					.from("user_locations")
-					.delete()
-					.eq("user_id", sessionData.user_id);
+			if (userError) throw userError;
 
-				if (deleteLocationError) throw deleteLocationError;
+			await upsertUserSession(userId, userData.nrp.toString(), false);
 
-				console.log("Logout successful, session updated and location deleted");
-			} else {
-				console.log("Invalid session data:", sessionData);
-				// Handle kasus di mana data sesi tidak valid
-			}
+			const { error: deleteLocationError } = await supabase
+				.from("user_locations")
+				.delete()
+				.eq("user_id", userId);
 
+			if (deleteLocationError) throw deleteLocationError;
+
+			console.log("Logout successful, session updated and location deleted");
 			router.replace("/");
 		} catch (error) {
 			console.error("Error during logout:", error);
@@ -62,7 +65,11 @@ export default function HomeScreen() {
 		<View style={styles.container}>
 			<Text style={styles.title}>Welcome!</Text>
 			<Text style={styles.subtitle}>You have successfully logged in.</Text>
-			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+			{userId && <LocationTracker userId={userId} />}
+			<TouchableOpacity
+				style={styles.logoutButton}
+				onPress={() => void handleLogout()}
+			>
 				<Text style={styles.logoutButtonText}>Logout</Text>
 			</TouchableOpacity>
 		</View>
