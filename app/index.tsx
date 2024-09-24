@@ -1,3 +1,4 @@
+import "../types";
 import React, { useState, useEffect } from "react";
 import {
 	View,
@@ -13,6 +14,7 @@ import { supabase } from "../lib/supabase";
 import * as Location from "expo-location";
 import { upsertUserSession } from "../utils/sessionUtils";
 import { getCurrentJakartaTime } from "../utils/dateUtils";
+import { startBackgroundLocationTracking } from "../utils/locationTracking";
 
 export default function LoginScreen() {
 	const [nrp, setNrp] = useState("");
@@ -55,6 +57,7 @@ export default function LoginScreen() {
 			}
 
 			const location = await Location.getCurrentPositionAsync({});
+			const { database: currentTimeDatabase } = getCurrentJakartaTime();
 
 			await upsertUserSession(userData.id, userData.nrp.toString(), true);
 
@@ -78,7 +81,15 @@ export default function LoginScreen() {
 				console.log("Lokasi berhasil disimpan");
 			}
 
-			console.log("Login berhasil, sesi dan lokasi disimpan");
+			// Start background location tracking
+			await startBackgroundLocationTracking(userData.id);
+
+			// Set userId globally for background tasks
+			global.userId = userData.id;
+
+			console.log(
+				"Login berhasil, sesi dan lokasi disimpan, tracking lokasi dimulai"
+			);
 			Alert.alert("Sukses", "Login berhasil");
 			router.replace("/home");
 		} catch (error) {

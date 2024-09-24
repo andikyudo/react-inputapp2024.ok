@@ -1,9 +1,11 @@
+import "../types";
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import LocationTracker from "../components/LocationTracker";
 import { upsertUserSession } from "../utils/sessionUtils";
+import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 
 export default function HomeScreen() {
 	const [userId, setUserId] = useState<string | null>(null);
@@ -34,7 +36,15 @@ export default function HomeScreen() {
 
 	const handleLogout = async () => {
 		try {
-			if (!userId) throw new Error("User ID not found");
+			if (!userId) {
+				throw new Error("User ID not found");
+			}
+
+			// Stop background location tracking
+			await stopBackgroundLocationTracking();
+
+			// Clear global userId
+			global.userId = undefined;
 
 			const { data: userData, error: userError } = await supabase
 				.from("custom_users")
@@ -51,9 +61,13 @@ export default function HomeScreen() {
 				.delete()
 				.eq("user_id", userId);
 
-			if (deleteLocationError) throw deleteLocationError;
+			if (deleteLocationError) {
+				console.error("Error deleting location:", deleteLocationError);
+			}
 
-			console.log("Logout successful, session updated and location deleted");
+			console.log(
+				"Logout successful, session updated, location deleted, and tracking stopped"
+			);
 			router.replace("/");
 		} catch (error) {
 			console.error("Error during logout:", error);
