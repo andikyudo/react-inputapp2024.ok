@@ -1,5 +1,6 @@
+import React from "react";
 import { Stack } from "expo-router";
-import Header from "../components/Header"; // Pastikan path ini benar
+import Header from "../components/Header";
 
 export default function RootLayout() {
 	return (
@@ -7,7 +8,7 @@ export default function RootLayout() {
 			screenOptions={{
 				header: () => <Header />,
 				headerStyle: {
-					backgroundColor: "#f4511e",
+					backgroundColor: "#6439FF",
 				},
 				headerTintColor: "#fff",
 				headerTitleStyle: {
@@ -29,8 +30,23 @@ export default function RootLayout() {
 				}}
 			/>
 			<Stack.Screen
-				name='details'
+				name='input-suara'
 				options={{
+					title: "Input Suara Pemilu",
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
+				name='cari-tps'
+				options={{
+					title: "Cari TPS",
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
+				name='rekapitulasi'
+				options={{
+					title: "Rekapitulasi",
 					headerShown: true,
 				}}
 			/>
