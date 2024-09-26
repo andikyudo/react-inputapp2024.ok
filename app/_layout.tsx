@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
+import Header from "../components/Header"; // Pastikan path ini benar
 
 export default function RootLayout() {
 	return (
 		<Stack
 			screenOptions={{
+				header: () => <Header />,
 				headerStyle: {
 					backgroundColor: "#f4511e",
 				},
@@ -13,9 +15,25 @@ export default function RootLayout() {
 				},
 			}}
 		>
-			<Stack.Screen name='index' options={{ headerShown: false }} />
-			<Stack.Screen name='home' options={{ title: "Home" }} />
-			<Stack.Screen name='details' />
+			<Stack.Screen
+				name='index'
+				options={{
+					headerShown: false,
+				}}
+			/>
+			<Stack.Screen
+				name='home'
+				options={{
+					title: "Home",
+					headerShown: true,
+				}}
+			/>
+			<Stack.Screen
+				name='details'
+				options={{
+					headerShown: true,
+				}}
+			/>
 		</Stack>
 	);
 }
