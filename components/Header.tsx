@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
 	View,
 	Text,
@@ -9,6 +9,7 @@ import {
 	Animated,
 	StatusBar,
 	Dimensions,
+	Switch,
 } from "react-native";
 import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,32 +17,20 @@ import { supabase } from "../lib/supabase";
 import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 import { upsertUserSession } from "../utils/sessionUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import PulsingDot from "./PulsingDot";
 
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const Header = () => {
+const Header: React.FC = () => {
 	const [userName, setUserName] = useState<string>("");
 	const [userId, setUserId] = useState<string | null>(null);
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [isDarkMode, setIsDarkMode] = useState(false);
-	const slideAnimation = useState(new Animated.Value(-400))[0];
+	const slideAnimation = useMemo(() => new Animated.Value(-400), []);
 	const navigation = useNavigation();
 
-	useEffect(() => {
-		void fetchUserInfo();
-		void loadMenuState();
-
-		const unsubscribe = navigation.addListener("state", () => {
-			void saveMenuState(false);
-			setMenuVisible(false);
-			slideAnimation.setValue(-400);
-		});
-
-		return unsubscribe;
-	}, [navigation]);
-
-	const fetchUserInfo = async () => {
+	const fetchUserInfo = useCallback(async () => {
 		try {
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
@@ -69,18 +58,15 @@ const Header = () => {
 			console.error("Error fetching user info:", error);
 			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
 		}
-	};
+	}, []);
 
-	const handleLogout = async () => {
+	const handleLogout = useCallback(async () => {
 		try {
 			if (!userId) {
 				throw new Error("User ID not found");
 			}
 
-			// Stop background location tracking
 			await stopBackgroundLocationTracking();
-
-			// Clear global userId
 			global.userId = undefined;
 
 			const { data: userData, error: userError } = await supabase
@@ -110,8 +96,9 @@ const Header = () => {
 			console.error("Error during logout:", error);
 			Alert.alert("Error", "Terjadi kesalahan saat logout");
 		}
-	};
-	const loadMenuState = async () => {
+	}, [userId]);
+
+	const loadMenuState = useCallback(async () => {
 		try {
 			const value = await AsyncStorage.getItem("@menu_visible");
 			if (value !== null) {
@@ -122,17 +109,17 @@ const Header = () => {
 		} catch (error) {
 			console.error("Error loading menu state:", error);
 		}
-	};
+	}, [slideAnimation]);
 
-	const saveMenuState = async (isVisible: boolean) => {
+	const saveMenuState = useCallback(async (isVisible: boolean) => {
 		try {
 			await AsyncStorage.setItem("@menu_visible", JSON.stringify(isVisible));
 		} catch (error) {
 			console.error("Error saving menu state:", error);
 		}
-	};
+	}, []);
 
-	const toggleMenu = () => {
+	const toggleMenu = useCallback(() => {
 		const newMenuState = !menuVisible;
 		setMenuVisible(newMenuState);
 		void saveMenuState(newMenuState);
@@ -141,35 +128,52 @@ const Header = () => {
 			duration: 300,
 			useNativeDriver: true,
 		}).start();
-	};
+	}, [menuVisible, saveMenuState, slideAnimation]);
 
-	const closeMenu = (callback?: () => void) => {
-		setMenuVisible(false);
-		void saveMenuState(false);
-		Animated.timing(slideAnimation, {
-			toValue: -400,
-			duration: 300,
-			useNativeDriver: true,
-		}).start(() => {
-			if (callback) callback();
-		});
-	};
-
-	const navigateTo = (screen: string) => {
-		closeMenu(() => {
-			router.push(screen);
-		});
-	};
-
-	const toggleDarkMode = () => {
-		setIsDarkMode(!isDarkMode);
+	const toggleDarkMode = useCallback(() => {
+		setIsDarkMode((prev) => !prev);
 		// Implement your dark mode logic here
-	};
+	}, []);
 
-	return (
-		<SafeAreaView
-			className={`${isDarkMode ? "bg-gray-800 pt-6" : "bg-purple-600 pt-6"}`}
-		>
+	const closeMenu = useCallback(
+		(callback?: () => void) => {
+			setMenuVisible(false);
+			void saveMenuState(false);
+			Animated.timing(slideAnimation, {
+				toValue: -400,
+				duration: 300,
+				useNativeDriver: true,
+			}).start(() => {
+				if (callback) callback();
+			});
+		},
+		[saveMenuState, slideAnimation]
+	);
+
+	const navigateTo = useCallback(
+		(screen: string) => {
+			closeMenu(() => {
+				router.push(screen as never);
+			});
+		},
+		[closeMenu, router]
+	);
+
+	useEffect(() => {
+		void fetchUserInfo();
+		void loadMenuState();
+
+		const unsubscribe = navigation.addListener("state", () => {
+			void saveMenuState(false);
+			setMenuVisible(false);
+			slideAnimation.setValue(-400);
+		});
+
+		return unsubscribe;
+	}, [navigation, fetchUserInfo, loadMenuState, saveMenuState, slideAnimation]);
+
+	const headerContent = useMemo(
+		() => (
 			<View className={`pt-${STATUSBAR_HEIGHT} px-4 pb-2`}>
 				<View className='flex-row justify-between items-center h-20'>
 					<TouchableOpacity onPress={toggleMenu} className='p-2'>
@@ -192,22 +196,30 @@ const Header = () => {
 						</Text>
 					</View>
 					<View className='flex-row items-center'>
-						<TouchableOpacity onPress={toggleDarkMode} className='mr-3'>
-							<Ionicons
-								name={isDarkMode ? "sunny" : "moon"}
-								size={20}
-								color='white'
-							/>
-						</TouchableOpacity>
+						<PulsingDot />
+						<Switch
+							trackColor={{ false: "#767577", true: "#f4f3f4" }}
+							thumbColor={isDarkMode ? "#767577" : "#f4f3f4"}
+							ios_backgroundColor='#3e3e3e'
+							onValueChange={toggleDarkMode}
+							value={isDarkMode}
+							className='mx-3'
+						/>
 						<TouchableOpacity onPress={handleLogout}>
 							<Ionicons name='log-out' size={20} color='white' />
 						</TouchableOpacity>
 					</View>
 				</View>
 			</View>
+		),
+		[userName, isDarkMode, toggleMenu, toggleDarkMode, handleLogout]
+	);
+
+	const menuContent = useMemo(
+		() => (
 			<Animated.View
 				className={`absolute left-0 right-0 ${
-					isDarkMode ? "bg-gray-900" : "bg-purple-700"
+					isDarkMode ? "bg-gray-900" : "bg-teal-800"
 				}`}
 				style={[
 					{ transform: [{ translateY: slideAnimation }] },
@@ -233,6 +245,16 @@ const Header = () => {
 					<Text className='text-white text-base'>Lihat Rekapitulasi Anda</Text>
 				</TouchableOpacity>
 			</Animated.View>
+		),
+		[isDarkMode, slideAnimation, navigateTo]
+	);
+
+	return (
+		<SafeAreaView
+			className={`${isDarkMode ? "bg-gray-800 pt-6" : "bg-teal-900 pt-6"}`}
+		>
+			{headerContent}
+			{menuContent}
 		</SafeAreaView>
 	);
 };

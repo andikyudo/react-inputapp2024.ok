@@ -4,7 +4,7 @@ import { View, Text, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import LocationTracker from "../components/LocationTracker";
 
-export default function HomeScreen() {
+const HomeScreen: React.FC = () => {
 	const [userId, setUserId] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -38,4 +38,6 @@ export default function HomeScreen() {
 			{userId && <LocationTracker userId={userId} />}
 		</View>
 	);
-}
+};
+
+export default HomeScreen;

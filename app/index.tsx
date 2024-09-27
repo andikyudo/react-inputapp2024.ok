@@ -16,7 +16,7 @@ import { upsertUserSession } from "../utils/sessionUtils";
 import { getCurrentJakartaTime } from "../utils/dateUtils";
 import { startBackgroundLocationTracking } from "../utils/locationTracking";
 
-export default function LoginScreen() {
+const LoginScreen: React.FC = () => {
 	const [nrp, setNrp] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -142,4 +142,6 @@ export default function LoginScreen() {
 			)}
 		</View>
 	);
-}
+};
+
+export default LoginScreen;
