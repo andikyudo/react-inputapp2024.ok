@@ -65,11 +65,11 @@ const LocationTracker: React.FC<LocationTrackerProps> = ({ userId }) => {
 		}
 	};
 
-	return (
-		<View style={styles.container}>
-			<Text>Tracking location...</Text>
-		</View>
-	);
+	// return (
+	// 	// <View style={styles.container}>
+	// 	// 	<Text>Tracking location...</Text>
+	// 	// </View>
+	// );
 };
 
 const styles = StyleSheet.create({

@@ -45,8 +45,8 @@ const HomeScreen: React.FC = () => {
 			<ScrollView className='flex-1 p-4'>
 				<MapSelector isDarkMode={isDarkMode} />
 				<View
-					className={`mt-6 p-4 rounded-lg ${
-						isDarkMode ? "bg-gray-800" : "bg-white"
+					className={` p-4 rounded-lg ${
+						isDarkMode ? "bg-gray-800" : "bg-white text-black"
 					} shadow`}
 				>
 					<Text
@@ -60,16 +60,6 @@ const HomeScreen: React.FC = () => {
 						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
 					>
 						• Pastikan Anda berada di lokasi TPS yang dipilih.
-					</Text>
-					<Text
-						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
-					>
-						• Laporkan segera jika ada ketidaksesuaian atau masalah.
-					</Text>
-					<Text
-						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
-					>
-						• Jaga kerahasiaan data pemilih.
 					</Text>
 				</View>
 			</ScrollView>
