@@ -234,22 +234,22 @@ const Header: React.FC = () => {
 						],
 						opacity: slideAnimation,
 						top: STATUSBAR_HEIGHT + HEADER_HEIGHT,
-						zIndex: -1,
+						zIndex: 1000,
 						height: MENU_HEIGHT,
 					},
 				]}
 			>
 				<TouchableOpacity
 					className='py-3 px-6 border-b border-gray-500'
-					onPress={() => navigateTo("/input-suara")}
+					onPress={() => navigateTo("/home")}
 				>
-					<Text className='text-white text-base'>Input Suara Pemilu</Text>
+					<Text className='text-white text-base'>Home | Cari TPS</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
 					className='py-3 px-6 border-b border-gray-500'
-					onPress={() => navigateTo("/cari-tps")}
+					onPress={() => navigateTo("/input-suara")}
 				>
-					<Text className='text-white text-base'>Cari TPS</Text>
+					<Text className='text-white text-base'>Input Suara Pemilu</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
 					className='py-3 px-6 border-b border-gray-500'

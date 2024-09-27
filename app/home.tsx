@@ -1,14 +1,19 @@
 import "../types";
 import React, { useState, useEffect } from "react";
-import { View, Text, Alert } from "react-native";
+import { View, Text, ScrollView, useColorScheme, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import LocationTracker from "../components/LocationTracker";
+import MapSelector from "../components/MapSelector";
+import Header from "../components/Header";
+import { router } from "expo-router";
 
 const HomeScreen: React.FC = () => {
 	const [userId, setUserId] = useState<string | null>(null);
+	const colorScheme = useColorScheme();
+	const isDarkMode = colorScheme === "dark";
 
 	useEffect(() => {
-		void fetchUserId();
+		fetchUserId();
 	}, []);
 
 	const fetchUserId = async () => {
@@ -24,17 +29,50 @@ const HomeScreen: React.FC = () => {
 			if (sessionError) throw sessionError;
 			if (sessionData && sessionData.user_id) {
 				setUserId(sessionData.user_id);
+			} else {
+				// If no active session is found, redirect to login
+				router.replace("/");
 			}
 		} catch (error) {
 			console.error("Error fetching user ID:", error);
 			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
+			router.replace("/");
 		}
 	};
 
 	return (
-		<View className='flex-1 justify-center items-center bg-gray-100'>
-			<Text className='text-2xl font-bold mb-2'>Selamat Datang!</Text>
-			<Text className='text-lg mb-5'>Anda telah berhasil masuk.</Text>
+		<View className={`flex-1 ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}>
+			<ScrollView className='flex-1 p-4'>
+				<MapSelector isDarkMode={isDarkMode} />
+				<View
+					className={`mt-6 p-4 rounded-lg ${
+						isDarkMode ? "bg-gray-800" : "bg-white"
+					} shadow`}
+				>
+					<Text
+						className={`text-lg font-bold mb-2 ${
+							isDarkMode ? "text-white" : "text-black"
+						}`}
+					>
+						Informasi Penting:
+					</Text>
+					<Text
+						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+					>
+						• Pastikan Anda berada di lokasi TPS yang dipilih.
+					</Text>
+					<Text
+						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+					>
+						• Laporkan segera jika ada ketidaksesuaian atau masalah.
+					</Text>
+					<Text
+						className={`mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}
+					>
+						• Jaga kerahasiaan data pemilih.
+					</Text>
+				</View>
+			</ScrollView>
 			{userId && <LocationTracker userId={userId} />}
 		</View>
 	);

@@ -1,7 +1,6 @@
 import "./types";
 import React, { useEffect } from "react";
 import { Alert } from "react-native";
-import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { config } from "./gluestack-ui.config";
 import Login from "./app/index"; // Assuming your login component is in index.tsx
 import * as Location from "expo-location";
