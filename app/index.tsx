@@ -104,10 +104,12 @@ export default function LoginScreen() {
 	}
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Login Aplikasi Voting</Text>
+		<View className='flex-1 justify-center p-5 bg-gray-100'>
+			<Text className='text-2xl font-bold mb-5 text-center'>
+				Login Aplikasi Voting
+			</Text>
 			<TextInput
-				style={styles.input}
+				className='h-12 border border-gray-300 mb-4 px-4 rounded-md bg-white'
 				placeholder='NRP'
 				value={nrp}
 				onChangeText={setNrp}
@@ -115,7 +117,7 @@ export default function LoginScreen() {
 				maxLength={8}
 			/>
 			<TextInput
-				style={styles.input}
+				className='h-12 border border-gray-300 mb-4 px-4 rounded-md bg-white'
 				placeholder='Password'
 				value={password}
 				onChangeText={setPassword}
@@ -123,50 +125,21 @@ export default function LoginScreen() {
 				secureTextEntry
 			/>
 			<TouchableOpacity
-				style={styles.button}
+				className={`bg-blue-800 p-4 rounded-md items-center ${
+					loading || nrp.length !== 8 || password.length === 0
+						? "opacity-90"
+						: ""
+				}`}
 				onPress={() => void checkCredentials()}
 				disabled={loading || nrp.length !== 8 || password.length === 0}
 			>
-				<Text style={styles.buttonText}>
+				<Text className='text-white font-bold text-lg'>
 					{loading ? "Sedang Login..." : "Login"}
 				</Text>
 			</TouchableOpacity>
-			{loading && <ActivityIndicator size='large' color='#0000ff' />}
+			{loading && (
+				<ActivityIndicator size='large' color='#0000ff' className='mt-4' />
+			)}
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		justifyContent: "center",
-		padding: 20,
-		backgroundColor: "#f5f5f5",
-	},
-	title: {
-		fontSize: 24,
-		fontWeight: "bold",
-		marginBottom: 20,
-		textAlign: "center",
-	},
-	input: {
-		height: 50,
-		borderColor: "#ddd",
-		borderWidth: 1,
-		marginBottom: 15,
-		paddingHorizontal: 15,
-		borderRadius: 10,
-		backgroundColor: "white",
-	},
-	button: {
-		backgroundColor: "#007AFF",
-		padding: 15,
-		borderRadius: 10,
-		alignItems: "center",
-	},
-	buttonText: {
-		color: "white",
-		fontSize: 18,
-		fontWeight: "bold",
-	},
-});

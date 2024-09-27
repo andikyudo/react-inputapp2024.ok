@@ -10,6 +10,7 @@ import {
 	Animated,
 	StatusBar,
 	Dimensions,
+	TouchableWithoutFeedback,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,14 +18,16 @@ import { supabase } from "../lib/supabase";
 import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 import { upsertUserSession } from "../utils/sessionUtils";
 
-const STATUSBAR_HEIGHT = StatusBar.currentHeight;
-const APPBAR_HEIGHT = Platform.OS === "ios" ? 44 : 56;
+const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
+// const APPBAR_HEIGHT = Platform.OS === "ios" ? 44 : 56;
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const Header = () => {
 	const [userName, setUserName] = useState<string>("");
 	const [userId, setUserId] = useState<string | null>(null);
 	const [menuVisible, setMenuVisible] = useState(false);
-	const slideAnimation = new Animated.Value(-300);
+	const [isDarkMode, setIsDarkMode] = useState(false);
+	const slideAnimation = useState(new Animated.Value(0))[0];
 
 	useEffect(() => {
 		void fetchUserInfo();
@@ -103,110 +106,103 @@ const Header = () => {
 	const toggleMenu = () => {
 		setMenuVisible(!menuVisible);
 		Animated.timing(slideAnimation, {
-			toValue: menuVisible ? -300 : 0,
+			toValue: menuVisible ? -400 : 0,
 			duration: 300,
 			useNativeDriver: true,
 		}).start();
 	};
 
+	const closeMenu = (callback?: () => void) => {
+		setMenuVisible(false);
+		Animated.timing(slideAnimation, {
+			toValue: -400,
+			duration: 300,
+			useNativeDriver: true,
+		}).start(() => {
+			if (callback) callback();
+		});
+	};
+
 	const navigateTo = (screen: string) => {
-		toggleMenu();
-		router.push(screen);
+		closeMenu(() => {
+			router.push(screen);
+		});
+	};
+
+	const toggleDarkMode = () => {
+		setIsDarkMode(!isDarkMode);
+		// Implement your dark mode logic here
 	};
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
-			<StatusBar barStyle='light-content' backgroundColor='#5930E5' />
-			<View style={styles.header}>
-				<TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-					<Ionicons name='menu' size={24} color='white' />
-				</TouchableOpacity>
-				<Text style={styles.welcomeText} numberOfLines={1} ellipsizeMode='tail'>
-					Selamat datang, {userName}
-				</Text>
-				<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-					<Text style={styles.logoutButtonText}>Logout</Text>
-				</TouchableOpacity>
+		<SafeAreaView
+			className={`${isDarkMode ? "bg-gray-800 pt-6" : "bg-purple-600 pt-6"}`}
+		>
+			<View className={`pt-${STATUSBAR_HEIGHT} px-4 pb-2`}>
+				<View className='flex-row justify-between items-center h-20'>
+					<TouchableOpacity onPress={toggleMenu} className='p-2'>
+						<Ionicons name='menu' size={24} color='white' />
+					</TouchableOpacity>
+					<View className='flex-1 items-center mx-2'>
+						<Text
+							className='text-white text-sm font-medium text-center'
+							numberOfLines={1}
+							ellipsizeMode='tail'
+						>
+							Selamat datang,
+						</Text>
+						<Text
+							className='text-white text-sm font-medium text-center'
+							numberOfLines={1}
+							ellipsizeMode='tail'
+						>
+							{userName}
+						</Text>
+					</View>
+					<View className='flex-row items-center'>
+						<TouchableOpacity onPress={toggleDarkMode} className='mr-3'>
+							<Ionicons
+								name={isDarkMode ? "sunny" : "moon"}
+								size={20}
+								color='white'
+							/>
+						</TouchableOpacity>
+						<TouchableOpacity onPress={handleLogout}>
+							<Ionicons name='log-out' size={20} color='white' />
+						</TouchableOpacity>
+					</View>
+				</View>
 			</View>
 			<Animated.View
-				style={[styles.menu, { transform: [{ translateX: slideAnimation }] }]}
+				className={`absolute left-0 right-0 ${
+					isDarkMode ? "bg-gray-900" : "bg-purple-700"
+				}`}
+				style={[
+					{ transform: [{ translateY: slideAnimation }] },
+					{ top: STATUSBAR_HEIGHT + 80 },
+				]}
 			>
 				<TouchableOpacity
-					style={styles.menuItem}
+					className='py-3 px-6 border-b border-gray-500'
 					onPress={() => navigateTo("/input-suara")}
 				>
-					<Text style={styles.menuItemText}>Input Suara Pemilu</Text>
+					<Text className='text-white text-base'>Input Suara Pemilu</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
-					style={styles.menuItem}
+					className='py-3 px-6 border-b border-gray-500'
 					onPress={() => navigateTo("/cari-tps")}
 				>
-					<Text style={styles.menuItemText}>Cari TPS</Text>
+					<Text className='text-white text-base'>Cari TPS</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
-					style={styles.menuItem}
+					className='py-3 px-6 border-b border-gray-500'
 					onPress={() => navigateTo("/rekapitulasi")}
 				>
-					<Text style={styles.menuItemText}>Lihat Rekapitulasi Anda</Text>
+					<Text className='text-white text-base'>Lihat Rekapitulasi Anda</Text>
 				</TouchableOpacity>
 			</Animated.View>
 		</SafeAreaView>
 	);
 };
-
-const styles = StyleSheet.create({
-	safeArea: {
-		paddingTop: Platform.OS === "android" ? STATUSBAR_HEIGHT : 0,
-		backgroundColor: "#5930E5",
-	},
-	header: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		padding: 10,
-		height: APPBAR_HEIGHT,
-		backgroundColor: "#5930E5",
-	},
-	menuButton: {
-		padding: 5,
-	},
-	welcomeText: {
-		color: "white",
-		fontSize: 16,
-		fontWeight: "bold",
-		flex: 1,
-		textAlign: "center",
-		marginHorizontal: 10,
-	},
-	logoutButton: {
-		backgroundColor: "white",
-		paddingVertical: 5,
-		paddingHorizontal: 10,
-		borderRadius: 5,
-	},
-	logoutButtonText: {
-		color: "#5930E5",
-		fontWeight: "bold",
-	},
-	menu: {
-		position: "absolute",
-		top: APPBAR_HEIGHT + (Platform.OS === "android" ? STATUSBAR_HEIGHT : 0),
-		left: 0,
-		bottom: 0,
-		width: 300,
-		backgroundColor: "#4a26b7",
-		paddingTop: 20,
-	},
-	menuItem: {
-		paddingVertical: 15,
-		paddingHorizontal: 20,
-		borderBottomWidth: 1,
-		borderBottomColor: "#6b45d2",
-	},
-	menuItemText: {
-		color: "white",
-		fontSize: 16,
-	},
-});
 
 export default Header;

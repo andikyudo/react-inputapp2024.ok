@@ -5,6 +5,7 @@ import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { config } from "./gluestack-ui.config";
 import Login from "./app/index"; // Assuming your login component is in index.tsx
 import * as Location from "expo-location";
+import { NativeWindStyleSheet } from "nativewind";
 
 export default function App() {
 	useEffect(() => {
@@ -20,8 +21,8 @@ export default function App() {
 	}, []);
 
 	return (
-		<GluestackUIProvider config={config}>
+		<NativeWindStyleSheet>
 			<Login />
-		</GluestackUIProvider>
+		</NativeWindStyleSheet>
 	);
 }

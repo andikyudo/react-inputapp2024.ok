@@ -1,6 +1,6 @@
 import "../types";
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import LocationTracker from "../components/LocationTracker";
 
@@ -32,28 +32,10 @@ export default function HomeScreen() {
 	};
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Welcome!</Text>
-			<Text style={styles.subtitle}>You have successfully logged in.</Text>
+		<View className='flex-1 justify-center items-center bg-gray-100'>
+			<Text className='text-2xl font-bold mb-2'>Selamat Datang!</Text>
+			<Text className='text-lg mb-5'>Anda telah berhasil masuk.</Text>
 			{userId && <LocationTracker userId={userId} />}
 		</View>
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#f5f5f5",
-	},
-	title: {
-		fontSize: 24,
-		fontWeight: "bold",
-		marginBottom: 10,
-	},
-	subtitle: {
-		fontSize: 18,
-		marginBottom: 20,
-	},
-});
