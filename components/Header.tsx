@@ -21,13 +21,15 @@ import PulsingDot from "./PulsingDot";
 
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HEADER_HEIGHT = 80;
+const MENU_HEIGHT = 150;
 
 const Header: React.FC = () => {
 	const [userName, setUserName] = useState<string>("");
 	const [userId, setUserId] = useState<string | null>(null);
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [isDarkMode, setIsDarkMode] = useState(false);
-	const slideAnimation = useMemo(() => new Animated.Value(-400), []);
+	const slideAnimation = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 	const navigation = useNavigation();
 
 	const fetchUserInfo = useCallback(async () => {
@@ -104,7 +106,7 @@ const Header: React.FC = () => {
 			if (value !== null) {
 				const isVisible = JSON.parse(value);
 				setMenuVisible(isVisible);
-				slideAnimation.setValue(isVisible ? 0 : -400);
+				slideAnimation.setValue(isVisible ? 0 : SCREEN_HEIGHT);
 			}
 		} catch (error) {
 			console.error("Error loading menu state:", error);
@@ -124,23 +126,18 @@ const Header: React.FC = () => {
 		setMenuVisible(newMenuState);
 		void saveMenuState(newMenuState);
 		Animated.timing(slideAnimation, {
-			toValue: newMenuState ? 0 : -400,
+			toValue: newMenuState ? 1 : 0,
 			duration: 300,
 			useNativeDriver: true,
 		}).start();
 	}, [menuVisible, saveMenuState, slideAnimation]);
-
-	const toggleDarkMode = useCallback(() => {
-		setIsDarkMode((prev) => !prev);
-		// Implement your dark mode logic here
-	}, []);
 
 	const closeMenu = useCallback(
 		(callback?: () => void) => {
 			setMenuVisible(false);
 			void saveMenuState(false);
 			Animated.timing(slideAnimation, {
-				toValue: -400,
+				toValue: 0,
 				duration: 300,
 				useNativeDriver: true,
 			}).start(() => {
@@ -149,6 +146,10 @@ const Header: React.FC = () => {
 		},
 		[saveMenuState, slideAnimation]
 	);
+	const toggleDarkMode = useCallback(() => {
+		setIsDarkMode((prev) => !prev);
+		// Implement your dark mode logic here
+	}, []);
 
 	const navigateTo = useCallback(
 		(screen: string) => {
@@ -166,7 +167,7 @@ const Header: React.FC = () => {
 		const unsubscribe = navigation.addListener("state", () => {
 			void saveMenuState(false);
 			setMenuVisible(false);
-			slideAnimation.setValue(-400);
+			slideAnimation.setValue(SCREEN_HEIGHT);
 		});
 
 		return unsubscribe;
@@ -222,8 +223,20 @@ const Header: React.FC = () => {
 					isDarkMode ? "bg-gray-900" : "bg-teal-800"
 				}`}
 				style={[
-					{ transform: [{ translateY: slideAnimation }] },
-					{ top: STATUSBAR_HEIGHT + 80 },
+					{
+						transform: [
+							{
+								translateY: slideAnimation.interpolate({
+									inputRange: [0, 1],
+									outputRange: [-MENU_HEIGHT, 0],
+								}),
+							},
+						],
+						opacity: slideAnimation,
+						top: STATUSBAR_HEIGHT + HEADER_HEIGHT,
+						zIndex: -1,
+						height: MENU_HEIGHT,
+					},
 				]}
 			>
 				<TouchableOpacity
@@ -253,8 +266,8 @@ const Header: React.FC = () => {
 		<SafeAreaView
 			className={`${isDarkMode ? "bg-gray-800 pt-6" : "bg-teal-900 pt-6"}`}
 		>
-			{headerContent}
 			{menuContent}
+			{headerContent}
 		</SafeAreaView>
 	);
 };
