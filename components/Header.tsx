@@ -3,23 +3,21 @@ import {
 	View,
 	Text,
 	TouchableOpacity,
-	StyleSheet,
 	SafeAreaView,
 	Platform,
 	Alert,
 	Animated,
 	StatusBar,
 	Dimensions,
-	TouchableWithoutFeedback,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 import { upsertUserSession } from "../utils/sessionUtils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
-// const APPBAR_HEIGHT = Platform.OS === "ios" ? 44 : 56;
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const Header = () => {
@@ -27,11 +25,21 @@ const Header = () => {
 	const [userId, setUserId] = useState<string | null>(null);
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [isDarkMode, setIsDarkMode] = useState(false);
-	const slideAnimation = useState(new Animated.Value(0))[0];
+	const slideAnimation = useState(new Animated.Value(-400))[0];
+	const navigation = useNavigation();
 
 	useEffect(() => {
 		void fetchUserInfo();
-	}, []);
+		void loadMenuState();
+
+		const unsubscribe = navigation.addListener("state", () => {
+			void saveMenuState(false);
+			setMenuVisible(false);
+			slideAnimation.setValue(-400);
+		});
+
+		return unsubscribe;
+	}, [navigation]);
 
 	const fetchUserInfo = async () => {
 		try {
@@ -103,10 +111,33 @@ const Header = () => {
 			Alert.alert("Error", "Terjadi kesalahan saat logout");
 		}
 	};
+	const loadMenuState = async () => {
+		try {
+			const value = await AsyncStorage.getItem("@menu_visible");
+			if (value !== null) {
+				const isVisible = JSON.parse(value);
+				setMenuVisible(isVisible);
+				slideAnimation.setValue(isVisible ? 0 : -400);
+			}
+		} catch (error) {
+			console.error("Error loading menu state:", error);
+		}
+	};
+
+	const saveMenuState = async (isVisible: boolean) => {
+		try {
+			await AsyncStorage.setItem("@menu_visible", JSON.stringify(isVisible));
+		} catch (error) {
+			console.error("Error saving menu state:", error);
+		}
+	};
+
 	const toggleMenu = () => {
-		setMenuVisible(!menuVisible);
+		const newMenuState = !menuVisible;
+		setMenuVisible(newMenuState);
+		void saveMenuState(newMenuState);
 		Animated.timing(slideAnimation, {
-			toValue: menuVisible ? -400 : 0,
+			toValue: newMenuState ? 0 : -400,
 			duration: 300,
 			useNativeDriver: true,
 		}).start();
@@ -114,6 +145,7 @@ const Header = () => {
 
 	const closeMenu = (callback?: () => void) => {
 		setMenuVisible(false);
+		void saveMenuState(false);
 		Animated.timing(slideAnimation, {
 			toValue: -400,
 			duration: 300,
