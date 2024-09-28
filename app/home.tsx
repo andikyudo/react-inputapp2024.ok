@@ -1,20 +1,21 @@
 import "../types";
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, useColorScheme, Alert } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
 import LocationTracker from "../components/LocationTracker";
 import MapSelector from "../components/MapSelector";
-import Header from "../components/Header";
 import { router } from "expo-router";
 import { useTheme } from "../contexts/ThemeContext";
+import { stopBackgroundLocationTracking } from "../utils/locationTracking";
+import { upsertUserSession } from "../utils/sessionUtils";
 
-const HomeScreen: React.FC = () => {
+export default function HomeScreen() {
 	const [userId, setUserId] = useState<string | null>(null);
 	const { theme } = useTheme();
 	const isDarkMode = theme === "dark";
 
 	useEffect(() => {
-		fetchUserId();
+		void fetchUserId();
 	}, []);
 
 	const fetchUserId = async () => {
@@ -38,6 +39,44 @@ const HomeScreen: React.FC = () => {
 			console.error("Error fetching user ID:", error);
 			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
 			router.replace("/");
+		}
+	};
+
+	const handleLogout = async () => {
+		try {
+			if (!userId) {
+				throw new Error("User ID not found");
+			}
+
+			await stopBackgroundLocationTracking();
+			global.userId = undefined;
+
+			const { data: userData, error: userError } = await supabase
+				.from("custom_users")
+				.select("nrp")
+				.eq("id", userId)
+				.single();
+
+			if (userError) throw userError;
+
+			await upsertUserSession(userId, userData.nrp.toString(), false);
+
+			const { error: deleteLocationError } = await supabase
+				.from("user_locations")
+				.delete()
+				.eq("user_id", userId);
+
+			if (deleteLocationError) {
+				console.error("Error deleting location:", deleteLocationError);
+			}
+
+			console.log(
+				"Logout successful, session updated, location deleted, and tracking stopped"
+			);
+			router.replace("/");
+		} catch (error) {
+			console.error("Error during logout:", error);
+			Alert.alert("Error", "Terjadi kesalahan saat logout");
 		}
 	};
 
@@ -67,6 +106,4 @@ const HomeScreen: React.FC = () => {
 			{userId && <LocationTracker userId={userId} />}
 		</View>
 	);
-};
-
-export default HomeScreen;
+}

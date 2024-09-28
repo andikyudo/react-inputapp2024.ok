@@ -5,7 +5,6 @@ import {
 	Text,
 	TextInput,
 	TouchableOpacity,
-	StyleSheet,
 	Alert,
 	ActivityIndicator,
 } from "react-native";
@@ -16,7 +15,7 @@ import { upsertUserSession } from "../utils/sessionUtils";
 import { getCurrentJakartaTime } from "../utils/dateUtils";
 import { startBackgroundLocationTracking } from "../utils/locationTracking";
 
-const LoginScreen: React.FC = () => {
+export default function LoginScreen() {
 	const [nrp, setNrp] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -142,6 +141,4 @@ const LoginScreen: React.FC = () => {
 			)}
 		</View>
 	);
-};
-
-export default LoginScreen;
+}
