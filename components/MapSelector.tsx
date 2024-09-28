@@ -5,6 +5,8 @@ import {
 	Dimensions,
 	TouchableOpacity,
 	Linking,
+	Platform,
+	StyleSheet,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import MapView, { Marker } from "react-native-maps";
@@ -46,26 +48,35 @@ const MapSelector: React.FC<MapSelectorProps> = ({ isDarkMode }) => {
 				>
 					Pilih TPS:
 				</Text>
-				<Picker
-					selectedValue={selectedTPS.id}
-					onValueChange={(itemValue) => {
-						const tps = dummyTPS.find((t) => t.id === itemValue);
-						if (tps) setSelectedTPS(tps);
-					}}
-					style={{
-						backgroundColor: isDarkMode ? "#1A202C" : "white",
-						color: isDarkMode ? "white" : "black",
-					}}
+				<View
+					style={[
+						styles.pickerContainer,
+						{ backgroundColor: isDarkMode ? "#333" : "white" },
+					]}
 				>
-					{dummyTPS.map((tps) => (
-						<Picker.Item
-							key={tps.id}
-							label={tps.name}
-							value={tps.id}
-							color={isDarkMode ? "white" : "black"}
-						/>
-					))}
-				</Picker>
+					<Picker
+						selectedValue={selectedTPS.id}
+						onValueChange={(itemValue) => {
+							const tps = dummyTPS.find((t) => t.id === itemValue);
+							if (tps) setSelectedTPS(tps);
+						}}
+						style={{
+							color: isDarkMode ? "white" : "black",
+							backgroundColor: isDarkMode ? "#333" : "white",
+						}}
+						dropdownIconColor={isDarkMode ? "white" : "black"}
+					>
+						{dummyTPS.map((tps) => (
+							<Picker.Item
+								key={tps.id}
+								label={tps.name}
+								value={tps.id}
+								color={isDarkMode ? "white" : "black"}
+								style={{ backgroundColor: isDarkMode ? "#333" : "white" }}
+							/>
+						))}
+					</Picker>
+				</View>
 			</View>
 			<View
 				className={`border-4 ${
@@ -118,5 +129,24 @@ const MapSelector: React.FC<MapSelectorProps> = ({ isDarkMode }) => {
 		</View>
 	);
 };
+
+const styles = StyleSheet.create({
+	pickerContainer: {
+		borderRadius: 8,
+		overflow: "hidden",
+	},
+	picker: {
+		width: "100%",
+		...Platform.select({
+			android: {
+				paddingHorizontal: 10,
+				paddingVertical: 3,
+			},
+			ios: {
+				// iOS styling jika diperlukan
+			},
+		}),
+	},
+});
 
 export default MapSelector;
