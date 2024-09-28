@@ -6,11 +6,12 @@ import LocationTracker from "../components/LocationTracker";
 import MapSelector from "../components/MapSelector";
 import Header from "../components/Header";
 import { router } from "expo-router";
+import { useTheme } from "../contexts/ThemeContext";
 
 const HomeScreen: React.FC = () => {
 	const [userId, setUserId] = useState<string | null>(null);
-	const colorScheme = useColorScheme();
-	const isDarkMode = colorScheme === "dark";
+	const { theme } = useTheme();
+	const isDarkMode = theme === "dark";
 
 	useEffect(() => {
 		fetchUserId();
@@ -45,8 +46,8 @@ const HomeScreen: React.FC = () => {
 			<ScrollView className='flex-1 p-4'>
 				<MapSelector isDarkMode={isDarkMode} />
 				<View
-					className={` p-4 rounded-lg ${
-						isDarkMode ? "bg-gray-800" : "bg-white text-black"
+					className={`p-4 rounded-lg ${
+						isDarkMode ? "bg-gray-800" : "bg-white"
 					} shadow`}
 				>
 					<Text

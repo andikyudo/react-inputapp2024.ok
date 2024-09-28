@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
 	View,
 	Text,
 	TouchableOpacity,
 	SafeAreaView,
-	Platform,
-	Alert,
 	Animated,
 	StatusBar,
 	Dimensions,
 	Switch,
+	Alert,
 } from "react-native";
 import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +17,8 @@ import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 import { upsertUserSession } from "../utils/sessionUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PulsingDot from "./PulsingDot";
+import { useTheme } from "../contexts/ThemeContext";
+import { useUser } from "../contexts/UserContext";
 
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -25,12 +26,17 @@ const HEADER_HEIGHT = 80;
 const MENU_HEIGHT = 150;
 
 const Header: React.FC = () => {
+	const { theme, toggleTheme } = useTheme();
+	const isDarkMode = theme === "dark";
 	const [userName, setUserName] = useState<string>("");
 	const [userId, setUserId] = useState<string | null>(null);
 	const [menuVisible, setMenuVisible] = useState(false);
-	const [isDarkMode, setIsDarkMode] = useState(false);
 	const slideAnimation = useMemo(() => new Animated.Value(SCREEN_HEIGHT), []);
 	const navigation = useNavigation();
+
+	const toggleDarkMode = useCallback(() => {
+		toggleTheme();
+	}, [toggleTheme]);
 
 	const fetchUserInfo = useCallback(async () => {
 		try {
@@ -146,10 +152,10 @@ const Header: React.FC = () => {
 		},
 		[saveMenuState, slideAnimation]
 	);
-	const toggleDarkMode = useCallback(() => {
-		setIsDarkMode((prev) => !prev);
-		// Implement your dark mode logic here
-	}, []);
+	// const toggleDarkMode = useCallback(() => {
+	// 	setIsDarkMode((prev) => !prev);
+	// 	// Implement your dark mode logic here
+	// }, []);
 
 	const navigateTo = useCallback(
 		(screen: string) => {

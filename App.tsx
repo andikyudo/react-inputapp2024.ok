@@ -2,9 +2,11 @@ import "./types";
 import React, { useEffect } from "react";
 import { Alert } from "react-native";
 import { config } from "./gluestack-ui.config";
-import Login from "./app/index"; // Assuming your login component is in index.tsx
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { UserProvider } from "./contexts/UserContext";
 import * as Location from "expo-location";
 import { NativeWindStyleSheet } from "nativewind";
+import { Slot } from "expo-router";
 
 export default function App() {
 	useEffect(() => {
@@ -20,8 +22,12 @@ export default function App() {
 	}, []);
 
 	return (
-		<NativeWindStyleSheet>
-			<Login />
-		</NativeWindStyleSheet>
+		<ThemeProvider>
+			<UserProvider>
+				<NativeWindStyleSheet>
+					<Slot />
+				</NativeWindStyleSheet>
+			</UserProvider>
+		</ThemeProvider>
 	);
 }

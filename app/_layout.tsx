@@ -1,14 +1,19 @@
 import React from "react";
 import { Stack } from "expo-router";
 import Header from "../components/Header";
+import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
+import { UserProvider } from "../contexts/UserContext";
 
-export default function RootLayout() {
+function StackLayout() {
+	const { theme } = useTheme();
+	const isDarkMode = theme === "dark";
+
 	return (
 		<Stack
 			screenOptions={{
 				header: () => <Header />,
 				headerStyle: {
-					backgroundColor: "#6439FF",
+					backgroundColor: isDarkMode ? "#1F2937" : "#6439FF",
 				},
 				headerTintColor: "#fff",
 				headerTitleStyle: {
@@ -37,13 +42,6 @@ export default function RootLayout() {
 				}}
 			/>
 			<Stack.Screen
-				name='cari-tps'
-				options={{
-					title: "Cari TPS",
-					headerShown: true,
-				}}
-			/>
-			<Stack.Screen
 				name='rekapitulasi'
 				options={{
 					title: "Rekapitulasi",
@@ -51,5 +49,15 @@ export default function RootLayout() {
 				}}
 			/>
 		</Stack>
+	);
+}
+
+export default function RootLayout() {
+	return (
+		<ThemeProvider>
+			<UserProvider>
+				<StackLayout />
+			</UserProvider>
+		</ThemeProvider>
 	);
 }
