@@ -5,21 +5,20 @@ import {
 	Dimensions,
 	TouchableOpacity,
 	Linking,
-	Platform,
 	StyleSheet,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import PulsingDot from "./PulsingDot";
 
 const { width } = Dimensions.get("window");
-const MAP_HEIGHT = width * 0.7; // 70% of screen width
+const MAP_HEIGHT = width * 0.7;
 
 const dummyTPS = [
-	{ id: "1", name: "TPS 1", latitude: -6.2088, longitude: 106.8456 },
-	{ id: "2", name: "TPS 2", latitude: -6.21, longitude: 106.847 },
-	{ id: "3", name: "TPS 3", latitude: -6.2076, longitude: 106.8442 },
-	{ id: "4", name: "TPS 4", latitude: -6.2112, longitude: 106.8484 },
+	{ id: "1", name: "TPS 1", latitude: -0.0358997, longitude: 109.3062702 },
+	{ id: "2", name: "TPS 2", latitude: -0.036, longitude: 109.307 },
+	{ id: "3", name: "TPS 3", latitude: -0.0355, longitude: 109.3065 },
+	{ id: "4", name: "TPS 4", latitude: -0.0362, longitude: 109.3068 },
 ];
 
 interface MapSelectorProps {
@@ -30,64 +29,39 @@ const MapSelector: React.FC<MapSelectorProps> = ({ isDarkMode }) => {
 	const [selectedTPS, setSelectedTPS] = useState(dummyTPS[0]);
 
 	const navigateToTPS = () => {
-		const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedTPS.latitude},${selectedTPS.longitude}`;
+		const url = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${selectedTPS.latitude},${selectedTPS.longitude}`;
 		Linking.openURL(url);
 	};
 
 	return (
-		<View className='mb-4'>
+		<View style={styles.container}>
 			<View
-				className={`mb-4 border-2 ${
-					isDarkMode ? "border-gray-600" : "border-gray-300"
-				} rounded-lg overflow-hidden`}
+				style={[
+					styles.pickerContainer,
+					{ backgroundColor: isDarkMode ? "#333" : "white" },
+				]}
 			>
-				<Text
-					className={`text-lg font-bold p-2 ${
-						isDarkMode ? "bg-gray-800 text-white" : "bg-blue-100 text-black"
-					}`}
+				<Picker
+					selectedValue={selectedTPS.id}
+					onValueChange={(itemValue) => {
+						const tps = dummyTPS.find((t) => t.id === itemValue);
+						if (tps) setSelectedTPS(tps);
+					}}
+					style={{ color: isDarkMode ? "white" : "black" }}
 				>
-					Pilih TPS:
-				</Text>
-				<View
-					style={[
-						styles.pickerContainer,
-						{ backgroundColor: isDarkMode ? "#333" : "white" },
-					]}
-				>
-					<Picker
-						selectedValue={selectedTPS.id}
-						onValueChange={(itemValue) => {
-							const tps = dummyTPS.find((t) => t.id === itemValue);
-							if (tps) setSelectedTPS(tps);
-						}}
-						style={{
-							color: isDarkMode ? "white" : "black",
-							backgroundColor: isDarkMode ? "#333" : "white",
-						}}
-						dropdownIconColor={isDarkMode ? "white" : "black"}
-					>
-						{dummyTPS.map((tps) => (
-							<Picker.Item
-								key={tps.id}
-								label={tps.name}
-								value={tps.id}
-								color={isDarkMode ? "white" : "black"}
-								style={{ backgroundColor: isDarkMode ? "#333" : "white" }}
-							/>
-						))}
-					</Picker>
-				</View>
+					{dummyTPS.map((tps) => (
+						<Picker.Item key={tps.id} label={tps.name} value={tps.id} />
+					))}
+				</Picker>
 			</View>
-			<View
-				className={`border-4 ${
-					isDarkMode ? "border-blue-700" : "border-blue-500"
-				} rounded-lg overflow-hidden mb-4`}
-			>
+
+			<View style={styles.mapContainer}>
 				<MapView
-					style={{ width: "100%", height: MAP_HEIGHT }}
+					provider={PROVIDER_DEFAULT}
+					style={styles.map}
 					initialRegion={{
-						latitude: -6.2088,
-						longitude: 106.8456,
+						latitude: selectedTPS.latitude,
+						longitude: selectedTPS.longitude,
 						latitudeDelta: 0.01,
 						longitudeDelta: 0.01,
 					}}
@@ -103,49 +77,67 @@ const MapSelector: React.FC<MapSelectorProps> = ({ isDarkMode }) => {
 					</Marker>
 				</MapView>
 			</View>
-			<View className='mb-4'>
+
+			<View style={styles.infoContainer}>
 				<Text
-					className={`font-semibold mb-1 ${
-						isDarkMode ? "text-white" : "text-black"
-					}`}
+					style={[styles.infoText, { color: isDarkMode ? "white" : "black" }]}
 				>
 					Lokasi TPS Terpilih:
 				</Text>
-				<Text className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
+				<Text
+					style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#666" }]}
+				>
 					Latitude: {selectedTPS.latitude}
 				</Text>
-				<Text className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
+				<Text
+					style={[styles.infoText, { color: isDarkMode ? "#ccc" : "#666" }]}
+				>
 					Longitude: {selectedTPS.longitude}
 				</Text>
 			</View>
-			<TouchableOpacity
-				className='bg-green-500 p-3 rounded-lg'
-				onPress={navigateToTPS}
-			>
-				<Text className='text-white text-center font-bold'>
-					Navigasi ke TPS
-				</Text>
+
+			<TouchableOpacity style={styles.button} onPress={navigateToTPS}>
+				<Text style={styles.buttonText}>Navigasi ke TPS</Text>
 			</TouchableOpacity>
 		</View>
 	);
 };
 
 const styles = StyleSheet.create({
+	container: {
+		marginBottom: 16,
+	},
 	pickerContainer: {
+		marginBottom: 16,
 		borderRadius: 8,
 		overflow: "hidden",
 	},
-	picker: {
-		width: "100%",
-		...Platform.select({
-			android: {
-				paddingHorizontal: 10,
-				paddingVertical: 3,
-			},
-			ios: {
-				// iOS styling jika diperlukan
-			},
-		}),
+	mapContainer: {
+		height: MAP_HEIGHT,
+		borderWidth: 4,
+		borderColor: "#3498db",
+		borderRadius: 8,
+		overflow: "hidden",
+		marginBottom: 16,
+	},
+	map: {
+		...StyleSheet.absoluteFillObject,
+	},
+	infoContainer: {
+		marginBottom: 16,
+	},
+	infoText: {
+		marginBottom: 4,
+	},
+	button: {
+		backgroundColor: "#2ecc71",
+		padding: 12,
+		borderRadius: 8,
+	},
+	buttonText: {
+		color: "white",
+		textAlign: "center",
+		fontWeight: "bold",
 	},
 });
 

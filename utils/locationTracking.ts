@@ -35,7 +35,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
 		const location = locations[0];
 
 		if (location) {
-			const { database: currentTimeDatabase } = getCurrentJakartaTime();
+			const currentTime = getCurrentJakartaTime();
 
 			try {
 				const { error: locationError } = await supabase
@@ -45,7 +45,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
 							user_id: global.userId, // We'll set this globally when user logs in
 							latitude: location.coords.latitude,
 							longitude: location.coords.longitude,
-							timestamp: currentTimeDatabase,
+							timestamp: currentTime, // Use the Jakarta time directly
 						},
 						{
 							onConflict: "user_id",
@@ -68,6 +68,17 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
 });
 
 export const stopBackgroundLocationTracking = async () => {
-	await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-	console.log("Background location tracking stopped");
+	try {
+		const isRegistered = await TaskManager.isTaskRegisteredAsync(
+			BACKGROUND_LOCATION_TASK
+		);
+		if (isRegistered) {
+			await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+			console.log("Background location tracking stopped");
+		} else {
+			console.log("Background location task was not registered");
+		}
+	} catch (error) {
+		console.error("Error stopping background location tracking:", error);
+	}
 };

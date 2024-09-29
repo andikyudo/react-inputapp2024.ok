@@ -14,6 +14,7 @@ import * as Location from "expo-location";
 import { upsertUserSession } from "../utils/sessionUtils";
 import { getCurrentJakartaTime } from "../utils/dateUtils";
 import { startBackgroundLocationTracking } from "../utils/locationTracking";
+import { log } from "../utils/logger";
 
 export default function LoginScreen() {
 	const [nrp, setNrp] = useState("");
@@ -30,6 +31,7 @@ export default function LoginScreen() {
 		if (nrp.length !== 8 || password.length === 0) return;
 
 		try {
+			log("Checking credentials for NRP:", nrp);
 			const { data: userData, error: userError } = await supabase
 				.from("custom_users")
 				.select("id, nrp, password")
@@ -37,13 +39,19 @@ export default function LoginScreen() {
 				.single();
 
 			if (userError) throw userError;
-			if (!userData) return;
+			if (!userData) {
+				log("No user found for NRP:", nrp);
+				return;
+			}
 
 			if (userData.password === password) {
+				log("Credentials valid, proceeding with login");
 				void handleLogin(userData);
+			} else {
+				log("Invalid password for NRP:", nrp);
 			}
 		} catch (error) {
-			console.error("Error checking credentials:", error);
+			log("Error checking credentials:", error);
 		}
 	}
 
@@ -92,7 +100,7 @@ export default function LoginScreen() {
 			Alert.alert("Sukses", "Login berhasil");
 			router.replace("/home");
 		} catch (error) {
-			console.error("Error selama login:", error);
+			log("Error during login:", error);
 			Alert.alert(
 				"Error",
 				error instanceof Error ? error.message : "Terjadi kesalahan saat login"

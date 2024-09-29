@@ -1,3 +1,4 @@
+import "expo-dev-client";
 import "./types";
 import React, { useEffect } from "react";
 import { Alert } from "react-native";

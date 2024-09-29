@@ -8,6 +8,7 @@ import { router } from "expo-router";
 import { useTheme } from "../contexts/ThemeContext";
 import { stopBackgroundLocationTracking } from "../utils/locationTracking";
 import { upsertUserSession } from "../utils/sessionUtils";
+import { log } from "../utils/logger";
 
 export default function HomeScreen() {
 	const [userId, setUserId] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export default function HomeScreen() {
 
 	const fetchUserId = async () => {
 		try {
+			log("Fetching user ID...");
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
 				.select("user_id")
@@ -30,13 +32,14 @@ export default function HomeScreen() {
 
 			if (sessionError) throw sessionError;
 			if (sessionData && sessionData.user_id) {
+				log("User ID fetched:", sessionData.user_id);
 				setUserId(sessionData.user_id);
 			} else {
-				// If no active session is found, redirect to login
+				log("No active session found, redirecting to login");
 				router.replace("/");
 			}
 		} catch (error) {
-			console.error("Error fetching user ID:", error);
+			log("Error fetching user ID:", error);
 			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
 			router.replace("/");
 		}
@@ -75,7 +78,7 @@ export default function HomeScreen() {
 			);
 			router.replace("/");
 		} catch (error) {
-			console.error("Error during logout:", error);
+			log("Error during logout:", error);
 			Alert.alert("Error", "Terjadi kesalahan saat logout");
 		}
 	};

@@ -5,7 +5,7 @@
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
-		"scheme": "myapp",
+		"scheme": "Inputdata2024",
 		"userInterfaceStyle": "automatic",
 		"splash": {
 			"image": "./assets/images/splash.png",
@@ -18,6 +18,9 @@
 				"UIBackgroundModes": ["location", "fetch"],
 				"NSLocationWhenInUseUsageDescription": "This app needs access to location when open.",
 				"NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to location when in the background."
+			},
+			"config": {
+				"googleMapsApiKey": null
 			}
 		},
 		"android": {
@@ -31,8 +34,14 @@
 				"android.permission.ACCESS_BACKGROUND_LOCATION",
 				"android.permission.FOREGROUND_SERVICE"
 			],
-			"package": "com.inputapp2024"
+			"package": "com.inputapp2024",
+			"config": {
+				"googleMaps": {
+					"apiKey": null
+				}
+			}
 		},
+
 		"web": {
 			"bundler": "metro",
 			"output": "static",
@@ -47,7 +56,8 @@
 					"locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location when the app is closed.",
 					"isAndroidBackgroundLocationEnabled": true
 				}
-			]
+			],
+			"expo-dev-client"
 		],
 		"experiments": {
 			"typedRoutes": true

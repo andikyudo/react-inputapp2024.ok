@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import PulsingDot from "./PulsingDot";
 import { useTheme } from "../contexts/ThemeContext";
 import { useUser } from "../contexts/UserContext";
+import { log } from "../utils/logger";
 
 const STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -40,6 +41,7 @@ const Header: React.FC = () => {
 
 	const fetchUserInfo = useCallback(async () => {
 		try {
+			log("Fetching user info");
 			const { data: sessionData, error: sessionError } = await supabase
 				.from("user_session")
 				.select("user_id")
@@ -63,18 +65,23 @@ const Header: React.FC = () => {
 				}
 			}
 		} catch (error) {
-			console.error("Error fetching user info:", error);
+			log("Error fetching user info:", error);
 			Alert.alert("Error", "Tidak dapat mengambil informasi pengguna");
 		}
 	}, []);
 
-	const handleLogout = useCallback(async () => {
+	const handleLogout = async () => {
 		try {
 			if (!userId) {
-				throw new Error("User ID not found");
+				console.log("No user ID found, skipping logout process");
+				router.replace("/");
+				return;
 			}
 
+			console.log("Starting logout process");
 			await stopBackgroundLocationTracking();
+			console.log("Background tracking stopped");
+
 			global.userId = undefined;
 
 			const { data: userData, error: userError } = await supabase
@@ -83,28 +90,34 @@ const Header: React.FC = () => {
 				.eq("id", userId)
 				.single();
 
-			if (userError) throw userError;
-
-			await upsertUserSession(userId, userData.nrp.toString(), false);
-
-			const { error: deleteLocationError } = await supabase
-				.from("user_locations")
-				.delete()
-				.eq("user_id", userId);
-
-			if (deleteLocationError) {
-				console.error("Error deleting location:", deleteLocationError);
+			if (userError) {
+				console.error("Error fetching user data:", userError);
+				throw userError;
 			}
 
-			console.log(
-				"Logout successful, session updated, location deleted, and tracking stopped"
-			);
+			if (userData) {
+				await upsertUserSession(userId, userData.nrp.toString(), false);
+				console.log("User session updated");
+
+				const { error: deleteLocationError } = await supabase
+					.from("user_locations")
+					.delete()
+					.eq("user_id", userId);
+
+				if (deleteLocationError) {
+					console.error("Error deleting location:", deleteLocationError);
+				} else {
+					console.log("User location deleted");
+				}
+			}
+
+			console.log("Logout process completed, redirecting to login");
 			router.replace("/");
 		} catch (error) {
 			console.error("Error during logout:", error);
 			Alert.alert("Error", "Terjadi kesalahan saat logout");
 		}
-	}, [userId]);
+	};
 
 	const loadMenuState = useCallback(async () => {
 		try {
